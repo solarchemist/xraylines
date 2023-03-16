@@ -4,7 +4,7 @@ type: software
 license: GPL-3.0-or-later
 title: 'Combined dataset of elemental X-ray line properties'
 version: 0.1.1.9000
-doi: https://doi.org/10.5281/zenodo.7742595
+doi: https://doi.org/10.5281/zenodo.7742628
 abstract: Dataset of X-ray line (transition) and edge energies, natural line
   widths, and fluorescence yields for the elements Z=4 (Be) to Z=103 (Lr).
   This package also provides a matching algorithm that given a set of energies

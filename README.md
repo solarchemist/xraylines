@@ -68,7 +68,7 @@ Duration: 12.7s
 To cite `xraylines` in publications use:
 
 Taha Ahmed (2023). Combined dataset of elemental X-ray line properties.
-DOI: [10.5281/zenodo.7742595 ](https://doi.org/10.5281/zenodo.7742595 ).
+DOI: [10.5281/zenodo.7742628](https://doi.org/10.5281/zenodo.7742628).
 
 Or see the `CITATION.cff` file in this repo
 ([learn about CFF](https://citation-file-format.github.io)).
