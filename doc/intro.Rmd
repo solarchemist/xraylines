@@ -1,0 +1,160 @@
+---
+title: "Reconstructing the xraylines dataset"
+author: "Taha Ahmed"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Reconstructing the xraylines dataset}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r packages, echo=FALSE, message=FALSE}
+library(knitr)
+library(dplyr)
+library(magrittr)
+library(here)
+library(common)
+library(conflicted)
+conflicted::conflict_prefer("filter", "dplyr")
+conflicted::conflict_prefer("lag", "dplyr")
+```
+
+
+```{r global_options, echo=FALSE, message=FALSE}
+options(
+   digits   = 7,
+   width    = 84,
+   continue = " ",
+   prompt   = "> ",
+   warn = 0,
+   stringsAsFactors = FALSE)
+opts_chunk$set(
+   dev        = 'svg',
+   fig.width  = 7.10,
+   fig.height = 4.39,
+   fig.align  = 'center',
+   echo       = TRUE,
+   eval       = TRUE,
+   cache      = FALSE,
+   collapse   = TRUE,
+   results    = 'hide',
+   message    = FALSE,
+   warning    = FALSE,
+   tidy       = FALSE)
+```
+
+
+
+Having a list of all X-ray transitions of the elements is quite useful,
+in particular when analysing X-ray fluorescence spectra.
+
+This dataset was based on a dataset of line energies included with the
+PANalytical Epsilon 5 instrument's software version 2.0J/ICSW 2.8 of Dec 7, 2010
+with kernel PW5050. In the Epsilon program, data on every transition's energy
+and relative intensity (as well as edge energies for each element)
+were stored in a user-accessible format (but had to be manually transcribed,
+which yours truly did).
+
+I combined the Epsilon 5 dataset with the freely available dataset of Kaye & Laby,
+and where the they diverged (usually at the third decimal) I gave priority
+to the former on account of it being much more recent and provided by a reputed
+instrument maker.
+
+Finally, I extended this combined dataset by adding natural line widths and
+fluorescence yields for each transition from the works of Krause & Oliver (1979)
+and Krause (1979).
+
+My original, detailed notes on this work is
+[available on my blog](https://solarchemist.se/2014/09/13/xray-line-energies).
+
+In the following we will just briefly demonstrate the process of constructing
+the dataset published in this package.
+
+Fetch the original, manually curated dataset (LibreOffice spreadsheet hosted
+on Figshare):
+
+```{r eval=FALSE}
+utils::download.file(
+   url = "https://ndownloader.figshare.com/files/3222110",
+   destfile = here::here("inst/extdata/xray-lines.ods"))
+```
+
+Note that this spreadsheet uses the IUPAC notation throughout, but some might
+prefer the (no longer recommended) Siegbahn notation.
+For that purpose, I created a "best effort" [correspondence table](https://solarchemist.se/2014/09/13/xray-line-energies/#notation-iupac-more-stringent-than-siegbahn).
+
+The dataset in this package was constructed from the ODS spreadsheet with
+the following script:
+
+```{r eval=FALSE}
+xraydata <- readODS::read_ods(here::here("inst/extdata/xray-lines.ods"), sheet = 1)
+# fix header
+names(xraydata) <- xraydata[1,]
+xraydata <- xraydata[-1, ]
+row.names(xraydata) <- seq(1, dim(xraydata)[1])
+# add label columns to xraydata
+xraydata[, column.labels] <- ""
+# warning: this loop is quite slow
+for (j in 1:dim(xraydata)[1]) {
+   # loop over each row in xraydata
+   for (k in 1:length(column.labels)) {
+      # loop over each element in the added column labels
+      if (xraydata$transition[j] != "") {
+         # only for transitions, do...
+         xraydata[j, column.labels[k]] <-
+            xray.labels[
+               which(xray.labels$IUPAC == xraydata$transition[j]),
+               which(names(xray.labels) == column.labels[k])]
+      }
+      if (xraydata$edge[j] != "") {
+         # only for edges, do...
+         xraydata$IUPAC.formatted[j] <-
+            xray.labels$IUPAC.formatted[which(xray.labels$IUPAC == xraydata$edge[j])]
+      }
+   }
+}
+# Create uniqueid for each xraydata row
+xraydata$uid <- paste(
+   xraydata$Z,
+   xraydata$element,
+   ifelse(
+      xraydata$transition != "",
+      xraydata$transition,
+      xraydata$edge),
+   sep = "-")
+# reset some columns to numeric (currently they are all character)
+xraydata$Z                  <- as.numeric(xraydata$Z)
+xraydata$transition.keV     <- as.numeric(xraydata$transition.keV)
+xraydata$intensity          <- as.numeric(xraydata$intensity)
+xraydata$width.eV           <- as.numeric(xraydata$width.eV)
+xraydata$edge.keV           <- as.numeric(xraydata$edge.keV)
+xraydata$fluorescence.yield <- as.numeric(xraydata$fluorescence.yield)
+save(xraydata, file = here::here("data/xray-line-energies.rda"))
+```
+
+
+This package also includes a line-matching algorithm I created to help
+pick out matching elemental X-ray lines given a list of observed energies.
+Please note that this was some of the first code I wrote as a doctoral student
+(in chemistry, to be clear) and it is incuded here as-was.
+I did, however, use this function successfully in many reports for in-house consumption.
+Here is how it could look (in a nicely formatted LaTeX table):
+
+```{r matching-screenshot, echo=FALSE, results="markup", out.width="100%"}
+knitr::include_graphics(here::here("man/figures/screenshot-matching.jpg"))
+```
+
+This package is shared in the hopes you may find this dataset and algorithm useful!
+
+
+## References
+
++ https://solarchemist.se/2014/09/13/xray-line-energies
++ [Kaye & Laby, Tables of Physical & Chemical Constants, US National Physical Laboratory](https://web.archive.org/web/20190511222636/http://www.kayelaby.npl.co.uk/atomic_and_nuclear_physics/4_2/4_2_1.html)
++ Krause & Oliver, 1979. Natural widths of atomic K and L levels, Kα X-ray lines and several KLL Auger lines.
+  Journal of Physical and Chemical Reference Data 8, 329. https://doi.org/10.1063/1.555595
++ Krause, 1979. Atomic radiative and radiationless yields for K and L shells.
+  Journal of Physical and Chemical Reference Data 8, 307-327. https://doi.org/10.1063/1.555594
++ https://en.wikipedia.org/wiki/X-ray_notation

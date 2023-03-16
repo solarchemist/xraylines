@@ -1,0 +1,27 @@
+Package: xraylines
+Type: Package
+Title: Combined Dataset of Elemental X-ray Line Properties
+Version: 0.1.0.9000
+Author: Taha Ahmed
+Maintainer: Taha Ahmed <taha@chepec.se>
+Description: Dataset of X-ray line (transition) and edge energies, natural line
+    widths, and fluorescence yields for the elements Z=4 (Be) to Z=103 (Lr).
+    This package also provides a matching algorithm that given a set of energies
+    can suggest the most closely matching elemental transitions based on some
+    simple heuristics.
+License: GPL-3 + file LICENSE
+Encoding: UTF-8
+LazyData: true
+VignetteBuilder: knitr
+Imports:
+    common,
+    dplyr,
+    magrittr,
+    rlang
+Suggests:
+   knitr,
+   rmarkdown,
+   here,
+   readODS,
+   conflicted
+RoxygenNote: 7.2.1

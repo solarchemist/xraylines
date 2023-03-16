@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: 'To cite the xraylines package in publications, please use the metadata in this file'
+type: software
+license: GPL-3.0-or-later
+title: 'Combined dataset of elemental X-ray line properties'
+version: 0.1.0.9000
+# doi:
+abstract: Dataset of X-ray line (transition) and edge energies, natural line
+  widths, and fluorescence yields for the elements Z=4 (Be) to Z=103 (Lr).
+  This package also provides a matching algorithm that given a set of energies
+  can suggest the most closely matching elemental transitions based on some
+  simple heuristics.
+authors:
+- family-names: Ahmed
+  given-names: Taha
+  email: taha@chepec.se
+  orcid: https://orcid.org/0000-0001-6717-0408
