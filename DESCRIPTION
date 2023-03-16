@@ -1,7 +1,7 @@
 Package: xraylines
 Type: Package
 Title: Combined Dataset of Elemental X-ray Line Properties
-Version: 0.1.0.9000
+Version: 0.1.1.9000
 Author: Taha Ahmed
 Maintainer: Taha Ahmed <taha@chepec.se>
 Description: Dataset of X-ray line (transition) and edge energies, natural line
