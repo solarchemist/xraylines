@@ -1,0 +1,130 @@
+---
+title: "Extracting Auger yields from PDF manuscript"
+author: "Taha Ahmed"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Extracting Auger yields from PDF manuscript}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r packages, echo=FALSE, message=FALSE}
+library(knitr)
+library(dplyr)
+library(magrittr)
+library(here)
+library(common)
+library(reticulate)
+library(conflicted)
+conflicted::conflict_prefer("filter", "dplyr")
+conflicted::conflict_prefer("lag", "dplyr")
+```
+
+
+```{r global_options, echo=FALSE, message=FALSE}
+options(
+   digits   = 7,
+   width    = 84,
+   continue = " ",
+   prompt   = "> ",
+   warn = 0,
+   stringsAsFactors = FALSE)
+knitr::opts_chunk$set(
+   dev        = 'svg',
+   fig.width  = 7.10,
+   fig.height = 4.39,
+   fig.align  = 'center',
+   echo       = FALSE,
+   eval       = TRUE,
+   cache      = FALSE,
+   collapse   = TRUE,
+   results    = 'hide',
+   message    = FALSE,
+   warning    = FALSE,
+   tidy       = FALSE)
+```
+
+
+So we want to add the Auger yields (which complements the fluorescence yields)
+to this dataset from Krause's 1979 paper, which contains a multi-column table
+contained on a single page listing the Auger yields for all elements from
+B (Z=5) to Ds (Z=110).
+
+It is possible to select the text in the table, but copying and pasting results
+in a jumbled mess.
+
+Let's try [the Python way](https://pyvideo.org/pycon-au-2019/extracting-tabular-data-from-pdfs-with-camelot-excalibur.html)
+using Camelot.
+
++ https://camelot-py.readthedocs.io/en/master/user/install-deps.html
++ https://towardsdatascience.com/extracting-tabular-data-from-pdfs-made-easy-with-camelot-80c13967cc88
+
+
+```{r pysetup, warning=FALSE}
+# CAREFUL, if you change pyenv name or path below, make sure to edit ./.Renviron accordingly!
+# note, now that we are also sharing some r variables in python, *avoid* using dots in names
+pyenv_here <- here::here()
+pyenv_name <- "vignette-auger"
+pyenv_path <- here::here("man/pyenv", pyenv_name)
+# Virtual environments are by default located at ~/.virtualenvs (accessed with the
+# virtualenv_root() function). You can change the default location by defining the
+# WORKON_HOME environment variable.
+# I have created .Renviron in the root of this R package where I set
+# WORKON_HOME=./../man/pyenv
+# (note that WORKON_HOME is relative to the PWD of this vignette Rmd file)
+# reticulate::virtualenv_root() should output the path set in WORKON_HOME
+reticulate::virtualenv_create(
+   # to avoid relying on virtualenv_root(), explicitly provide a path instead of just a name
+   envname = pyenv_path,
+   # this is just cosmetic, hides PATH warning and makes Python output more readable
+   pip_options = c("--no-warn-script-location"),
+   # did not help, still installed camelot-py v0.9
+   # ignore_installed = TRUE,
+   # character vector of additional command line arguments to be passed to pip
+   # still installed v0.9, not v0.11 as listed in PyPi
+   # pip_options = c("--no-cache-dir", "--upgrade"),
+   # note, "camelot-py[base]" (like the docs on pypi says) resulted in v0.9
+   # https://stackoverflow.com/a/67962556/1198249
+   packages = c("opencv-python-headless", "ghostscript", "camelot-py"))
+# use_python() **doesn't work** in RStudio IDE (claims RETICULATE_PYTHON overrides it,
+# despite that env not being set in $HOME or anywhere else on the system), but
+# works as expected when run in simple R terminal
+# reticulate::use_python(paste0(pyenv_path, "/bin/python"))
+# anyway, the solution appears to be to simply set RETICULATE_PYTHON env ourselves
+# in .Renviron in this package's root
+# py_config() was helpful to understand whether our pyenv was active
+# reticulate::py_config()
+```
+
+
+```{python 'camelot'}
+# https://rstudio.github.io/reticulate/articles/r_markdown.html
+# https://www.lukaskawerau.com/rmarkdown-with-python-and-virtual-envs/
+# https://stackoverflow.com/a/61616750
+# import camelot fails in Python terminal (inside pyenv, on luxor):
+# import-im6.q16: unable to open X server `' @ error/import.c/ImportImageCommand/346.
+# headless problem? yes, fixed by installing opencv-python-headless and importing camelot.io
+# https://stackoverflow.com/a/67962556
+import camelot.io as camelot
+import cv2
+import os
+# print(r.pyenv_here)
+# https://stackoverflow.com/questions/7132861/build-the-full-path-filename-in-python
+pdf_path = os.path.join(r.pyenv_here, "inst/extdata/Krause1979-p13.pdf")
+#print(pdf_path)
+# camelot.read_pdf() fails: ModuleNotFoundError: No module named 'ghostscript'
+# OK, resolved by installing pip package ghostscript
+auger_table = camelot.read_pdf(pdf_path)
+auger_table
+# argh, returns empty list <TableList n=0>
+# appears Camelot cannot read our old PDF, despite table values clickable in Evince
+# (confirmed working with camelot's own test PDF foo.pdf)
+```
+
+
++ https://pypi.org/project/camelot-py
++ https://github.com/camelot-dev/camelot
++ https://cran.r-project.org/web/packages/reticulate/vignettes/python_packages.html
++ https://rstudio.github.io/reticulate/articles/r_markdown.html
