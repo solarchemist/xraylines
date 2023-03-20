@@ -36,7 +36,7 @@ I suggest the following package rebuild procedure:
 + Run `devtools::check()` (use `document=TRUE` to also update the docs).
   Should complete with no warnings or errors, and 2 notes:
 ```
-── R CMD check results ──────────────────── xraylines 0.1.1.9000 ────
+── R CMD check results ──────────────────── xraylines ────
 Duration: 12.7s
 
 ❯ checking top-level files ... NOTE
@@ -52,8 +52,6 @@ Duration: 12.7s
 ```
 + Run `devtools::build_vignettes()`. This recompiles the vignettes
   and populates the `doc/` directory.
-+ Manually remove the line `doc` from `.gitignore` because we want the built
-  vignette to be available on the remote repo (the build step keeps adding this line).
 
 
 ## Contributions welcome!

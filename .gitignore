@@ -3,6 +3,7 @@
 .RData
 .Ruserdata
 .Rbuildignore
+*.code-workspace
 *.Rproj
 /Meta/
 /doc/
