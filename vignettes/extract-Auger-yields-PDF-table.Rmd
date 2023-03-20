@@ -68,24 +68,12 @@ using Camelot.
 pyenv_here <- here::here()
 pyenv_name <- "vignette-auger"
 pyenv_path <- here::here("man/pyenv", pyenv_name)
-# Virtual environments are by default located at ~/.virtualenvs (accessed with the
-# virtualenv_root() function). You can change the default location by defining the
-# WORKON_HOME environment variable.
-# I have created .Renviron in the root of this R package where I set
-# WORKON_HOME=./../man/pyenv
-# (note that WORKON_HOME is relative to the PWD of this vignette Rmd file)
-# reticulate::virtualenv_root() should output the path set in WORKON_HOME
 reticulate::virtualenv_create(
    # to avoid relying on virtualenv_root(), explicitly provide a path instead of just a name
    envname = pyenv_path,
-   # this is just cosmetic, hides PATH warning and makes Python output more readable
-   pip_options = c("--no-warn-script-location"),
-   # did not help, still installed camelot-py v0.9
-   # ignore_installed = TRUE,
-   # character vector of additional command line arguments to be passed to pip
-   # still installed v0.9, not v0.11 as listed in PyPi
-   # pip_options = c("--no-cache-dir", "--upgrade"),
-   # note, "camelot-py[base]" (like the docs on pypi says) resulted in v0.9
+   # this is just cosmetic, hides repeated PATH warning and makes Python output more readable
+   pip_options = c("--no-warn-sscript-location"),
+   # note, "camelot-py[base]" (like the docs on pypi says) resulted in only v0.9
    # https://stackoverflow.com/a/67962556/1198249
    packages = c("opencv-python-headless", "ghostscript", "camelot-py"))
 # use_python() **doesn't work** in RStudio IDE (claims RETICULATE_PYTHON overrides it,
@@ -99,11 +87,12 @@ reticulate::virtualenv_create(
 ```
 
 
+I skimmed through some more docs and the issue queue, and think it might be worth
+trying Camelot again with different `flavor` settings.
+
 ```{python 'camelot'}
-# https://rstudio.github.io/reticulate/articles/r_markdown.html
-# https://www.lukaskawerau.com/rmarkdown-with-python-and-virtual-envs/
 # https://stackoverflow.com/a/61616750
-# import camelot fails in Python terminal (inside pyenv, on luxor):
+# import camelot fails in Python terminal (inside pyenv, on luxor), with:
 # import-im6.q16: unable to open X server `' @ error/import.c/ImportImageCommand/346.
 # headless problem? yes, fixed by installing opencv-python-headless and importing camelot.io
 # https://stackoverflow.com/a/67962556
@@ -114,17 +103,35 @@ import os
 # https://stackoverflow.com/questions/7132861/build-the-full-path-filename-in-python
 pdf_path = os.path.join(r.pyenv_here, "inst/extdata/Krause1979-p13.pdf")
 #print(pdf_path)
-# camelot.read_pdf() fails: ModuleNotFoundError: No module named 'ghostscript'
+# camelot.read_pdf() failed: ModuleNotFoundError: No module named 'ghostscript'
 # OK, resolved by installing pip package ghostscript
-auger_table = camelot.read_pdf(pdf_path)
-auger_table
-# argh, returns empty list <TableList n=0>
-# appears Camelot cannot read our old PDF, despite table values clickable in Evince
-# (confirmed working with camelot's own test PDF foo.pdf)
+auger_table = camelot.read_pdf(pdf_path, flavor='stream')
+# auger_table
+# read_pdf(..., flavor='lattice') -> empty list <TableList n=0>
+# read_pdf(..., flavor='stream') -> <TableList n=1>
+auger_table[0].parsing_report
+csv_path = os.path.join(r.pyenv_here, "inst/extdata/Krause1979-p13.csv")
+auger_table[0].to_csv(csv_path)
 ```
 
+Not too bad by Camelot. There is definitely a bunch of transcription errors,
+but the overall layout of the tabular is preserved in the CSV.
+Will require a lot of manual cleanup, but still better than transcribing it
+manually from scratch.
+Although I wonder if another approach like Tesseract OCR would give better
+transcription results?
 
+(Note, since I already invested time and effort here in getting python venv working
+inside this R package vignette, I'd prefer a Python-based alternative to Camelot).
+
+
++ https://towardsdatascience.com/extracting-tabular-data-from-pdfs-made-easy-with-camelot-80c13967cc88
 + https://pypi.org/project/camelot-py
 + https://github.com/camelot-dev/camelot
 + https://cran.r-project.org/web/packages/reticulate/vignettes/python_packages.html
++ https://www.lukaskawerau.com/rmarkdown-with-python-and-virtual-envs/
 + https://rstudio.github.io/reticulate/articles/r_markdown.html
++ https://github.com/JaidedAI/EasyOCR
++ https://github.com/jbarlow83/OCRmyPDF
++ https://pypi.org/project/pytesseract/
++ https://tesseract-ocr.github.io/tessdoc/Home.html
